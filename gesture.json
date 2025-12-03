@@ -1,0 +1,114 @@
+{
+  "task": "Build a complete browser-based gesture-controlled notes and drawing app with voice note recording using React, TypeScript, Vite, and MediaPipe Hands (via TensorFlow.js hand-pose-detection) on Ubuntu.",
+  "environment": {
+    "os": "Ubuntu Linux",
+    "node": "Use the latest LTS version available",
+    "package_manager": "npm",
+    "constraints": [
+      "Everything runs client-side in the browser",
+      "Use lightweight, real-time models suitable for webcam input",
+      "No heavy backend services; voice notes are stored only in memory or as downloadable blobs",
+      "Code must be clean, modular, and easy to understand for a BTech CSE student"
+    ]
+  },
+  "tech_stack": {
+    "frontend": [
+      "React",
+      "TypeScript",
+      "Vite"
+    ],
+    "computer_vision": [
+      "@tensorflow-models/hand-pose-detection",
+      "@mediapipe/hands"
+    ],
+    "audio": [
+      "Web APIs: navigator.mediaDevices.getUserMedia",
+      "MediaRecorder API",
+      "HTMLAudioElement for playback"
+    ],
+    "styling": [
+      "Simple CSS or TailwindCSS (you can pick one, but keep it minimal and clean)"
+    ]
+  },
+  "models_and_libraries_requirements": {
+    "hand_tracking": {
+      "description": "Use TensorFlow.js hand-pose-detection with the MediaPipe Hands runtime. Use a lightweight, real-time configuration suitable for browser use.",
+      "goals": [
+        "Detect one hand with 21 landmarks in real time from the webcam",
+        "Provide positions of thumb and index fingertips for pinch detection",
+        "Provide overall hand openness for fist vs open-hand detection"
+      ]
+    }
+  },
+  "project_features": {
+    "core": [
+      "Open webcam feed in the browser",
+      "Run real-time hand tracking using MediaPipe Hands (via TFJS hand-pose-detection)",
+      "Use the hand position as a virtual cursor on the screen",
+      "Detect a pinch gesture (thumb + index fingertip close together) and map it to a click/tap action",
+      "Detect a fist/closed hand gesture and use it as a drag/drawing gesture",
+      "Provide a drawing canvas where the gesture-controlled cursor can draw lines when the user is in 'draw' mode",
+      "Provide sticky-note style text notes that can be created and moved around",
+      "Add voice note recording for each note: record via microphone, stop, and then play back the voice note"
+    ],
+    "extra_polish": [
+      "Show a visible cursor indicator following the hand position",
+      "Show simple visual feedback for gestures (e.g., small icon when pinching or drawing)",
+      "Add a clear and simple top toolbar with basic buttons: 'Draw Mode', 'Pointer Mode', 'New Note', 'Clear Canvas'",
+      "Indicate when audio recording is active (e.g., red dot or 'Recording...' text)"
+    ]
+  },
+  "architecture_and_structure_requirements": {
+    "goals": [
+      "Separate computer vision logic from UI components",
+      "Make gesture detection reusable and testable",
+      "Keep React components focused on rendering and state, not low-level CV details"
+    ],
+    "expected_structure": {
+      "root": "gesture-notes-app",
+      "folders": [
+        "src/components",
+        "src/hooks",
+        "src/lib",
+        "src/styles"
+      ],
+      "example_files": {
+        "src/main.tsx": "React entry point",
+        "src/App.tsx": "Top-level layout and routing of main components",
+        "src/components/VideoFeed.tsx": "Handles webcam stream and passes frames to the hand-tracking logic if needed",
+        "src/hooks/useHandTracking.ts": "Custom hook that sets up TFJS hand-pose-detection with MediaPipe Hands, subscribes to webcam frames, and returns current hand landmarks and derived gesture info",
+        "src/lib/gestureDetector.ts": "Pure functions that take hand landmarks and return high-level gestures such as 'cursorPosition', 'isPinching', 'isFist'",
+        "src/components/GestureCursorLayer.tsx": "Overlay that converts gesture information into a visual cursor and fires click/drag events",
+        "src/components/DrawingCanvas.tsx": "HTML canvas or similar component that listens to virtual cursor events and implements drawing",
+        "src/components/NoteBoard.tsx": "Manages a list of notes (position, text, attached audio URL)",
+        "src/components/NoteCard.tsx": "Represents a single note with text area and embedded voice note recorder",
+        "src/components/VoiceNoteRecorder.tsx": "Component that uses MediaRecorder to record, stop, and play audio; exposes props/callbacks to attach audio to a note"
+      }
+    }
+  },
+  "step_by_step_plan": [
+    "1. Initialize a new Vite + React + TypeScript project and install all required dependencies (React, ReactDOM, @types/react, @types/react-dom, @tensorflow-models/hand-pose-detection, @mediapipe/hands, and any build or styling libraries chosen). Provide the exact npm commands.",
+    "2. Configure a basic global layout in App.tsx with a top toolbar and a main workspace area that contains: (a) the video feed / vision layer, (b) the drawing canvas, and (c) the note board.",
+    "3. Implement a VideoFeed component that requests webcam access using navigator.mediaDevices.getUserMedia and shows the video on screen. Handle basic error cases if permissions are denied.",
+    "4. Implement a useHandTracking hook that: (a) initializes the TFJS hand-pose-detection model with the MediaPipe Hands backend, (b) attaches to the HTMLVideoElement from VideoFeed, (c) runs predictions in a loop, and (d) returns the latest hand landmarks and detection status via React state or a callback.",
+    "5. Implement gestureDetector.ts with pure functions that take the hand landmarks and compute: (a) normalized cursor position (x, y), (b) isPinching boolean (based on distance between thumb and index fingertips), (c) isFist boolean (based on overall finger curl or distances). Document the logic clearly in comments.",
+    "6. Implement GestureCursorLayer.tsx that subscribes to the gesture information and displays a cursor on top of the workspace. When isPinching transitions from false to true while over a 'clickable' area, trigger a virtual click event. When isFist is true and the cursor is moving over the canvas, treat it as a drawing/drag action.",
+    "7. Implement DrawingCanvas.tsx that: (a) listens to virtual cursor position and drawing state, (b) draws lines when drawing is active (fist or 'draw' mode enabled), and (c) provides a simple Clear Canvas button or listens to a toolbar action.",
+    "8. Implement NoteBoard.tsx and NoteCard.tsx such that the user can create new notes, edit text inside them, and drag them around using either traditional mouse or the gesture-based pointer if easily supported. Each NoteCard should have space for a VoiceNoteRecorder.",
+    "9. Implement VoiceNoteRecorder.tsx using the MediaRecorder API: (a) start recording when the user clicks a 'Record' button, (b) collect audio data chunks, (c) stop recording and create a Blob and object URL, (d) show an <audio controls> element to play the note, and (e) provide a callback to pass the audio URL or Blob up to the parent NoteCard for storage.",
+    "10. Integrate VoiceNoteRecorder into NoteCard so each note can have at least one recorded voice note. Optionally add a Download button to save the audio file locally.",
+    "11. Add minimal but clean styling to make the UI look presentable: proper layout for the canvas, notes area, and video/gesture overlay. Focus on clarity and usability, not fancy design.",
+    "12. Finally, provide instructions on how to run the project (npm install, npm run dev) and how to use the main features (enable webcam, see the cursor follow your hand, pinch to click, draw on the canvas, create notes, and record/play voice notes)."
+  ],
+  "deliverables": [
+    "Complete, working React + TypeScript + Vite project with all core features implemented",
+    "All necessary npm install commands and setup instructions",
+    "All source files with clear comments explaining important logic, especially hand tracking and gesture detection",
+    "Short README-style explanation of how to run and use the project on Ubuntu"
+  ],
+  "style_preferences": {
+    "code": "TypeScript-friendly, idiomatic React with functional components and hooks",
+    "comments": "Explain key parts such as model initialization, gesture math, and audio recording logic",
+    "complexity": "Keep things as simple as possible while still being robust and modular"
+  }
+}
