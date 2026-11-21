@@ -5,5 +5,13 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000
+  },
+  build: {
+    rollupOptions: {
+      external: ['@mediapipe/hands']
+    }
+  },
+  optimizeDeps: {
+    exclude: ['@mediapipe/hands']
   }
 })

@@ -22,7 +22,7 @@ export function useHandTracking(videoElement: HTMLVideoElement | null) {
         const model = handPoseDetection.SupportedModels.MediaPipeHands;
         const detector = await handPoseDetection.createDetector(model, {
           runtime: 'mediapipe',
-          solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/hands',
+          solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915',
           modelType: 'lite',
           maxHands: 1
         });
