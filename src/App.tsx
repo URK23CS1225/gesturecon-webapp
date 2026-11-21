@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { VideoFeed } from './components/VideoFeed';
 import { GestureCursorLayer } from './components/GestureCursorLayer';
 import { DrawingCanvas } from './components/DrawingCanvas';
@@ -9,14 +9,34 @@ import './styles/App.css';
 
 function App() {
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
+  const [videoDimensions, setVideoDimensions] = useState({ width: 0, height: 0 });
   const [isDrawMode, setIsDrawMode] = useState(false);
   const [drawPosition, setDrawPosition] = useState<{ x: number; y: number; isDrawing: boolean } | null>(null);
-  
+
   const { gestureInfo, landmarks, isReady } = useHandTracking(videoElement);
 
   const handleVideoReady = useCallback((video: HTMLVideoElement) => {
     setVideoElement(video);
+    // Poll until the video reports real dimensions
+    const poll = setInterval(() => {
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        setVideoDimensions({ width: video.videoWidth, height: video.videoHeight });
+        clearInterval(poll);
+      }
+    }, 100);
   }, []);
+
+  // Keep dimensions in sync if video resizes (e.g. camera switch)
+  useEffect(() => {
+    if (!videoElement) return;
+    const handleResize = () => {
+      if (videoElement.videoWidth > 0) {
+        setVideoDimensions({ width: videoElement.videoWidth, height: videoElement.videoHeight });
+      }
+    };
+    videoElement.addEventListener('resize', handleResize);
+    return () => videoElement.removeEventListener('resize', handleResize);
+  }, [videoElement]);
 
   const handleGestureClick = useCallback((x: number, y: number) => {
     console.log('Gesture click at:', x, y);
@@ -27,7 +47,7 @@ function App() {
   }, []);
 
   const createNewNote = () => {
-   if ((window as any).__createNote) {
+    if ((window as any).__createNote) {
       (window as any).__createNote();
     }
   };
@@ -48,42 +68,42 @@ function App() {
     <div className="app">
       <VideoFeed onVideoReady={handleVideoReady} />
 
-      {/* Hand Skeleton Overlay */}
-      {videoElement && (
+      {/* Hand Skeleton Overlay — only render once we have real video dimensions */}
+      {videoDimensions.width > 0 && (
         <HandSkeleton
           landmarks={landmarks}
-          videoWidth={videoElement.videoWidth}
-          videoHeight={videoElement.videoHeight}
+          videoWidth={videoDimensions.width}
+          videoHeight={videoDimensions.height}
         />
       )}
 
       {/* Sidebar Menu */}
       <div className="sidebar">
-        <button 
-          className="menu-item" 
+        <button
+          className="menu-item"
           style={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' }}
           onClick={createNewNote}
         >
           <span className="menu-icon">📝</span>
           <span className="menu-text">Notes</span>
         </button>
-        <button 
-          className="menu-item" 
+        <button
+          className="menu-item"
           style={{ background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)' }}
           onClick={() => setIsDrawMode(!isDrawMode)}
         >
           <span className="menu-icon">✏️</span>
           <span className="menu-text">Draw</span>
         </button>
-        <button 
-          className="menu-item" 
+        <button
+          className="menu-item"
           style={{ background: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)' }}
         >
           <span className="menu-icon">🎤</span>
           <span className="menu-text">Voice</span>
         </button>
-        <button 
-          className="menu-item" 
+        <button
+          className="menu-item"
           style={{ background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)' }}
         >
           <span className="menu-icon">⚙️</span>
