@@ -9,11 +9,8 @@ interface Note {
   audioUrl?: string;
 }
 
-interface NoteBoardProps {
-  onCreateNote: () => void;
-}
 
-export function NoteBoard({ onCreateNote }: NoteBoardProps) {
+export function NoteBoard() {
   const [notes, setNotes] = useState<Note[]>([]);
 
   const createNote = () => {

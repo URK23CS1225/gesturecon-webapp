@@ -27,7 +27,7 @@ function App() {
   }, []);
 
   const createNewNote = () => {
-    if ((window as any).__createNote) {
+   if ((window as any).__createNote) {
       (window as any).__createNote();
     }
   };
@@ -126,7 +126,7 @@ function App() {
         onExitDrawMode={() => setIsDrawMode(false)}
       />
 
-      <NoteBoard onCreateNote={createNewNote} />
+      <NoteBoard />
     </div>
   );
 }
