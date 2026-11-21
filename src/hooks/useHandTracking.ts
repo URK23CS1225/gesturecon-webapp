@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import * as handPoseDetection from '@tensorflow-models/hand-pose-detection';
 import '@tensorflow/tfjs-core';
+import '@tensorflow/tfjs-converter';
 import '@tensorflow/tfjs-backend-webgl';
+import * as tf from '@tensorflow/tfjs-core';
 import { detectGestures, GestureInfo } from '../lib/gestureDetector';
 import { Keypoint } from '@tensorflow-models/hand-pose-detection';
 
@@ -19,11 +21,13 @@ export function useHandTracking(videoElement: HTMLVideoElement | null) {
     async function initializeDetector() {
       try {
         console.log('Initializing hand detector...');
+        await tf.setBackend('webgl');
+        await tf.ready();
+        console.log('TF backend:', tf.getBackend());
 
         const model = handPoseDetection.SupportedModels.MediaPipeHands;
         const detector = await handPoseDetection.createDetector(model, {
-          runtime: 'mediapipe',
-          solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915',
+          runtime: 'tfjs',
           modelType: 'lite',
           maxHands: 1,
         });
@@ -58,9 +62,16 @@ export function useHandTracking(videoElement: HTMLVideoElement | null) {
     async function loop() {
       if (!runningRef.current || !videoElement || !detectorRef.current) return;
 
+      // Wait for real video dimensions
       if (videoElement.readyState < 2 || videoElement.videoWidth === 0) {
         animationRef.current = requestAnimationFrame(loop);
         return;
+      }
+
+      // Ensure .width/.height are set (tfjs uses input.width/height, not videoWidth/Height)
+      if (!videoElement.width || !videoElement.height) {
+        videoElement.width = videoElement.videoWidth;
+        videoElement.height = videoElement.videoHeight;
       }
 
       try {
@@ -71,7 +82,7 @@ export function useHandTracking(videoElement: HTMLVideoElement | null) {
           const W = videoElement.videoWidth;
           const H = videoElement.videoHeight;
 
-          console.log('kp[8]:', kp[8].x.toFixed(1), kp[8].y.toFixed(1), 'video:', W, H);
+          console.log('kp[8]:', kp[8].x?.toFixed(1), kp[8].y?.toFixed(1), 'video:', W, H);
 
           const gesture = detectGestures(kp, W, H);
           setGestureInfo(gesture);

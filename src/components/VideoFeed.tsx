@@ -18,8 +18,13 @@ export function VideoFeed({ onVideoReady }: VideoFeedProps) {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           videoRef.current.onloadedmetadata = () => {
-            videoRef.current?.play();
-            onVideoReady(videoRef.current!);
+            const v = videoRef.current!;
+            v.play();
+            // Set .width/.height so tfjs getImageSize() returns real dimensions
+            // instead of the HTML attribute default of 0
+            v.width = v.videoWidth || 640;
+            v.height = v.videoHeight || 480;
+            onVideoReady(v);
           };
         }
       } catch (err) {
