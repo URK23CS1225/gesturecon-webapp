@@ -4,6 +4,8 @@ import { GestureCursorLayer } from './components/GestureCursorLayer';
 import { DrawingCanvas } from './components/DrawingCanvas';
 import { NoteBoard } from './components/NoteBoard';
 import { HandSkeleton } from './components/HandSkeleton';
+import { DebugOverlay } from './components/DebugOverlay';
+import { GestureGuide } from './components/GestureGuide';
 import { useHandTracking } from './hooks/useHandTracking';
 import './styles/App.css';
 
@@ -12,8 +14,9 @@ function App() {
   const [videoDimensions, setVideoDimensions] = useState({ width: 0, height: 0 });
   const [isDrawMode, setIsDrawMode] = useState(false);
   const [drawPosition, setDrawPosition] = useState<{ x: number; y: number; isDrawing: boolean } | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
 
-  const { gestureInfo, landmarks, isReady } = useHandTracking(videoElement);
+  const { gestureInfo, landmarks, isReady, metrics, debugData } = useHandTracking(videoElement);
 
   const handleVideoReady = useCallback((video: HTMLVideoElement) => {
     setVideoElement(video);
@@ -44,6 +47,15 @@ function App() {
 
   const handleGestureDrag = useCallback((x: number, y: number, isDragging: boolean) => {
     setDrawPosition({ x, y, isDrawing: isDragging });
+  }, []);
+
+  // D key toggles debug overlay
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'd' || e.key === 'D') setShowDebug(v => !v);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   const createNewNote = () => {
@@ -137,16 +149,31 @@ function App() {
         gestureInfo={gestureInfo}
         onGestureClick={handleGestureClick}
         onGestureDrag={handleGestureDrag}
+        handLost={metrics.handLost}
+        handPartiallyOut={metrics.handPartiallyOutOfFrame}
       />
 
       <DrawingCanvas
         drawPosition={drawPosition}
         isDrawMode={isDrawMode}
+        handLost={metrics.handLost}
         onClear={() => setDrawPosition(null)}
         onExitDrawMode={() => setIsDrawMode(false)}
       />
 
       <NoteBoard />
+
+      {/* Gesture reference guide — always visible, bottom-right */}
+      <GestureGuide />
+
+      {/* Debug overlay — toggle with D key */}
+      {showDebug && (
+        <DebugOverlay
+          debugData={debugData}
+          metrics={metrics}
+          onClose={() => setShowDebug(false)}
+        />
+      )}
     </div>
   );
 }

@@ -182,3 +182,17 @@ body {
   }
 }
 
+
+/* ── Gesture cursor animations ──────────────────────────────────────────── */
+@keyframes gestureRipple {
+  0%   { transform: scale(0.5); opacity: 0.9; }
+  100% { transform: scale(2.8); opacity: 0; }
+}
+
+/* Hover highlight applied by GestureCursorLayer */
+.gesture-hover {
+  outline: 2px solid rgba(0, 200, 255, 0.7) !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 10px rgba(0, 200, 255, 0.4) !important;
+  transition: outline 0.05s, box-shadow 0.05s;
+}
