@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import * as handPoseDetection from '@tensorflow-models/hand-pose-detection';
-import '@tensorflow/tfjs-backend-webgl';
 import '@tensorflow/tfjs-core';
+import '@tensorflow/tfjs-backend-webgl';
+import * as tf from '@tensorflow/tfjs-core';
 import { detectGestures, GestureInfo } from '../lib/gestureDetector';
 import { Keypoint } from '@tensorflow-models/hand-pose-detection';
 
@@ -18,11 +19,11 @@ export function useHandTracking(videoElement: HTMLVideoElement | null) {
     async function initializeDetector() {
       try {
         console.log('Initializing hand detector...');
+        await tf.ready();
         
         const model = handPoseDetection.SupportedModels.MediaPipeHands;
         const detector = await handPoseDetection.createDetector(model, {
-          runtime: 'mediapipe',
-          solutionPath: 'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915',
+          runtime: 'tfjs',
           modelType: 'lite',
           maxHands: 1
         });
