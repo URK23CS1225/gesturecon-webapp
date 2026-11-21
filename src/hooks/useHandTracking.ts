@@ -13,17 +13,14 @@ export function useHandTracking(videoElement: HTMLVideoElement | null) {
   const [isReady, setIsReady] = useState(false);
   const detectorRef = useRef<handPoseDetection.HandDetector | null>(null);
   const animationRef = useRef<number>();
-  const isDetectingRef = useRef(false);
+  const runningRef = useRef(false);
 
-  // Initialize detector once on mount
   useEffect(() => {
     let mounted = true;
 
     async function initializeDetector() {
       try {
         console.log('Initializing hand detector...');
-
-        // Ensure WebGL backend is registered and ready
         await tf.setBackend('webgl');
         await tf.ready();
         console.log('TF backend:', tf.getBackend());
@@ -42,9 +39,7 @@ export function useHandTracking(videoElement: HTMLVideoElement | null) {
         }
       } catch (error) {
         console.error('Failed to initialize hand detector:', error);
-        setTimeout(() => {
-          if (mounted) initializeDetector();
-        }, 2000);
+        setTimeout(() => { if (mounted) initializeDetector(); }, 2000);
       }
     }
 
@@ -52,72 +47,56 @@ export function useHandTracking(videoElement: HTMLVideoElement | null) {
 
     return () => {
       mounted = false;
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      runningRef.current = false;
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
       detectorRef.current?.dispose();
     };
   }, []);
 
-  // Start detection loop once both video and detector are ready
   useEffect(() => {
     if (!videoElement || !detectorRef.current || !isReady) return;
-    if (isDetectingRef.current) return;
+    if (runningRef.current) return;
 
-    async function waitForVideoAndDetect() {
-      // Wait until video has actual dimensions
-      if (
-        !videoElement ||
-        videoElement.readyState < 2 ||
-        videoElement.videoWidth === 0
-      ) {
-        animationRef.current = requestAnimationFrame(waitForVideoAndDetect);
+    runningRef.current = true;
+
+    async function loop() {
+      if (!runningRef.current || !videoElement || !detectorRef.current) return;
+
+      // Wait for video to have real dimensions
+      if (videoElement.readyState < 2 || videoElement.videoWidth === 0) {
+        animationRef.current = requestAnimationFrame(loop);
         return;
       }
-      startDetectionLoop();
-    }
 
-    async function startDetectionLoop() {
-      if (!videoElement || !detectorRef.current) return;
-      isDetectingRef.current = true;
+      try {
+        const hands = await detectorRef.current.estimateHands(videoElement);
 
-      async function detectHands() {
-        if (!videoElement || !detectorRef.current) return;
+        if (hands.length > 0 && hands[0].keypoints) {
+          const kp = hands[0].keypoints;
+          const W = videoElement.videoWidth;
+          const H = videoElement.videoHeight;
 
-        try {
-          const hands = await detectorRef.current.estimateHands(videoElement, {
-            flipHorizontal: true,
-          });
+          console.log('keypoint[8]:', kp[8].x.toFixed(1), kp[8].y.toFixed(1), 'video:', W, H);
 
-          if (hands.length > 0 && hands[0].keypoints) {
-            const gesture = detectGestures(
-              hands[0].keypoints,
-              videoElement.videoWidth,
-              videoElement.videoHeight
-            );
-            setGestureInfo(gesture);
-            setLandmarks(hands[0].keypoints);
-          } else {
-            setGestureInfo(null);
-            setLandmarks(null);
-          }
-        } catch (error) {
-          console.error('Hand detection error:', error);
+          const gesture = detectGestures(kp, W, H);
+          setGestureInfo(gesture);
+          setLandmarks([...kp]);
+        } else {
+          setGestureInfo(null);
+          setLandmarks(null);
         }
-
-        animationRef.current = requestAnimationFrame(detectHands);
+      } catch (err) {
+        console.error('Detection error:', err);
       }
 
-      detectHands();
+      animationRef.current = requestAnimationFrame(loop);
     }
 
-    waitForVideoAndDetect();
+    loop();
 
     return () => {
-      isDetectingRef.current = false;
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
+      runningRef.current = false;
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
   }, [videoElement, isReady]);
 

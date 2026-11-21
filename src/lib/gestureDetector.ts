@@ -6,18 +6,10 @@ export interface GestureInfo {
   isFist: boolean;
 }
 
-/**
- * Check if a finger is extended
- */
 function isFingerExtended(tip: Keypoint, middle: Keypoint): boolean {
   return tip.y < middle.y - 15;
 }
 
-/**
- * Detect gestures from hand landmarks.
- * Keypoints are already in pixel space (0–videoWidth, 0–videoHeight)
- * and already flipped horizontally (flipHorizontal: true in estimateHands).
- */
 export function detectGestures(
   landmarks: Keypoint[],
   videoWidth: number,
@@ -25,10 +17,9 @@ export function detectGestures(
 ): GestureInfo {
   const indexTip = landmarks[8];
 
-  // Map pixel coordinates to 0–1 screen-space.
-  // x is already mirrored by flipHorizontal, so just divide.
+  // Mirror X to match the CSS scaleX(-1) on the video element
   const cursorPosition = {
-    x: indexTip.x / videoWidth,
+    x: 1 - indexTip.x / videoWidth,
     y: indexTip.y / videoHeight,
   };
 
@@ -37,11 +28,8 @@ export function detectGestures(
   const ringExtended   = isFingerExtended(landmarks[16], landmarks[14]);
   const pinkyExtended  = isFingerExtended(landmarks[20], landmarks[18]);
 
-  // Click: only index finger up
   const isPinching = indexExtended && !middleExtended && !ringExtended && !pinkyExtended;
-
-  // Draw: index and middle fingers up
-  const isFist = indexExtended && middleExtended && !ringExtended && !pinkyExtended;
+  const isFist     = indexExtended && middleExtended   && !ringExtended && !pinkyExtended;
 
   return { cursorPosition, isPinching, isFist };
 }

@@ -7,33 +7,18 @@ interface HandSkeletonProps {
   videoHeight: number;
 }
 
-const HAND_CONNECTIONS = [
-  [0, 1], [1, 2], [2, 3], [3, 4],        // Thumb
-  [0, 5], [5, 6], [6, 7], [7, 8],        // Index
-  [0, 9], [9, 10], [10, 11], [11, 12],   // Middle
-  [0, 13], [13, 14], [14, 15], [15, 16], // Ring
-  [0, 17], [17, 18], [18, 19], [19, 20], // Pinky
-  [5, 9], [9, 13], [13, 17],             // Palm
+const HAND_CONNECTIONS: [number, number][] = [
+  [0, 1], [1, 2], [2, 3], [3, 4],
+  [0, 5], [5, 6], [6, 7], [7, 8],
+  [0, 9], [9, 10], [10, 11], [11, 12],
+  [0, 13], [13, 14], [14, 15], [15, 16],
+  [0, 17], [17, 18], [18, 19], [19, 20],
+  [5, 9], [9, 13], [13, 17],
 ];
 
 export function HandSkeleton({ landmarks, videoWidth, videoHeight }: HandSkeletonProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Keep canvas sized to window
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener('resize', resize);
-    return () => window.removeEventListener('resize', resize);
-  }, []);
-
-  // Draw skeleton on every landmarks update
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -41,21 +26,31 @@ export function HandSkeleton({ landmarks, videoWidth, videoHeight }: HandSkeleto
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Always resize canvas to current window, then draw — in one effect
+    // so resizing never clears a draw from a separate effect
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // Clear after resize
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (!landmarks || landmarks.length === 0) return;
-    if (!videoWidth || !videoHeight) return;
+    if (!landmarks || landmarks.length < 21 || !videoWidth || !videoHeight) {
+      console.log('HandSkeleton: no landmarks or bad dimensions', { count: landmarks?.length, videoWidth, videoHeight });
+      return;
+    }
 
-    // Scale from video pixel space to screen pixel space
+    console.log('HandSkeleton drawing', landmarks.length, 'points, video:', videoWidth, 'x', videoHeight, 'canvas:', canvas.width, 'x', canvas.height);
+
+    // The video has CSS transform scaleX(-1), so mirror X to match
     const scaleX = canvas.width / videoWidth;
     const scaleY = canvas.height / videoHeight;
 
     const pts = landmarks.map(p => ({
-      x: p.x * scaleX,
+      x: (videoWidth - p.x) * scaleX,  // mirror X to match mirrored video
       y: p.y * scaleY,
     }));
 
-    // Connections
+    // Draw bones
     ctx.strokeStyle = 'rgba(0, 255, 255, 0.85)';
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
@@ -66,7 +61,7 @@ export function HandSkeleton({ landmarks, videoWidth, videoHeight }: HandSkeleto
       ctx.stroke();
     }
 
-    // Dots
+    // Draw joints
     pts.forEach((p, i) => {
       ctx.beginPath();
       ctx.arc(p.x, p.y, i === 0 ? 9 : 5, 0, 2 * Math.PI);
@@ -76,6 +71,7 @@ export function HandSkeleton({ landmarks, videoWidth, videoHeight }: HandSkeleto
       ctx.lineWidth = 2;
       ctx.stroke();
     });
+
   }, [landmarks, videoWidth, videoHeight]);
 
   return (
