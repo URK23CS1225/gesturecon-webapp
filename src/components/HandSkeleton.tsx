@@ -8,12 +8,12 @@ interface HandSkeletonProps {
 }
 
 const HAND_CONNECTIONS = [
-  [0, 1], [1, 2], [2, 3], [3, 4], // Thumb
-  [0, 5], [5, 6], [6, 7], [7, 8], // Index
-  [0, 9], [9, 10], [10, 11], [11, 12], // Middle
-  [0, 13], [13, 14], [14, 15], [15, 16], // Ring
-  [0, 17], [17, 18], [18, 19], [19, 20], // Pinky
-  [5, 9], [9, 13], [13, 17] // Palm
+  [0, 1], [1, 2], [2, 3], [3, 4],       // Thumb
+  [0, 5], [5, 6], [6, 7], [7, 8],       // Index
+  [0, 9], [9, 10], [10, 11], [11, 12],  // Middle
+  [0, 13], [13, 14], [14, 15], [15, 16],// Ring
+  [0, 17], [17, 18], [18, 19], [19, 20],// Pinky
+  [5, 9], [9, 13], [13, 17],            // Palm
 ];
 
 export function HandSkeleton({ landmarks, videoWidth, videoHeight }: HandSkeletonProps) {
@@ -31,12 +31,16 @@ export function HandSkeleton({ landmarks, videoWidth, videoHeight }: HandSkeleto
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (!landmarks || landmarks.length === 0) return;
+    if (!landmarks || landmarks.length === 0 || !videoWidth || !videoHeight) return;
 
-    // Convert landmarks to screen coordinates
+    // Keypoints are already in pixel space and already flipped (flipHorizontal: true).
+    // Just scale from video pixel space → screen pixel space.
+    const scaleX = window.innerWidth / videoWidth;
+    const scaleY = window.innerHeight / videoHeight;
+
     const screenLandmarks = landmarks.map(point => ({
-      x: (1 - point.x / videoWidth) * window.innerWidth,
-      y: (point.y / videoHeight) * window.innerHeight
+      x: point.x * scaleX,
+      y: point.y * scaleY,
     }));
 
     // Draw connections
@@ -49,7 +53,7 @@ export function HandSkeleton({ landmarks, videoWidth, videoHeight }: HandSkeleto
       ctx.stroke();
     });
 
-    // Draw landmarks
+    // Draw landmark dots
     screenLandmarks.forEach((point, i) => {
       ctx.beginPath();
       ctx.arc(point.x, point.y, i === 0 ? 8 : 5, 0, 2 * Math.PI);
@@ -69,7 +73,7 @@ export function HandSkeleton({ landmarks, videoWidth, videoHeight }: HandSkeleto
         top: 0,
         left: 0,
         pointerEvents: 'none',
-        zIndex: 50
+        zIndex: 50,
       }}
     />
   );

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as handPoseDetection from '@tensorflow-models/hand-pose-detection';
 import '@tensorflow/tfjs-core';
+import '@tensorflow/tfjs-converter';
 import '@tensorflow/tfjs-backend-webgl';
 import * as tf from '@tensorflow/tfjs-core';
 import { detectGestures, GestureInfo } from '../lib/gestureDetector';
@@ -12,20 +13,26 @@ export function useHandTracking(videoElement: HTMLVideoElement | null) {
   const [isReady, setIsReady] = useState(false);
   const detectorRef = useRef<handPoseDetection.HandDetector | null>(null);
   const animationRef = useRef<number>();
+  const isDetectingRef = useRef(false);
 
+  // Initialize detector once on mount
   useEffect(() => {
     let mounted = true;
 
     async function initializeDetector() {
       try {
         console.log('Initializing hand detector...');
+
+        // Ensure WebGL backend is registered and ready
+        await tf.setBackend('webgl');
         await tf.ready();
-        
+        console.log('TF backend:', tf.getBackend());
+
         const model = handPoseDetection.SupportedModels.MediaPipeHands;
         const detector = await handPoseDetection.createDetector(model, {
           runtime: 'tfjs',
           modelType: 'lite',
-          maxHands: 1
+          maxHands: 1,
         });
 
         if (mounted) {
@@ -52,45 +59,62 @@ export function useHandTracking(videoElement: HTMLVideoElement | null) {
     };
   }, []);
 
+  // Start detection loop once both video and detector are ready
   useEffect(() => {
     if (!videoElement || !detectorRef.current || !isReady) return;
+    if (isDetectingRef.current) return;
 
-    if (videoElement.readyState < 2) {
-      const handleLoadedData = () => {
-        console.log('Video ready, starting detection');
-      };
-      videoElement.addEventListener('loadeddata', handleLoadedData);
-      return () => videoElement.removeEventListener('loadeddata', handleLoadedData);
+    async function waitForVideoAndDetect() {
+      // Wait until video has actual dimensions
+      if (
+        !videoElement ||
+        videoElement.readyState < 2 ||
+        videoElement.videoWidth === 0
+      ) {
+        animationRef.current = requestAnimationFrame(waitForVideoAndDetect);
+        return;
+      }
+      startDetectionLoop();
     }
 
-    async function detectHands() {
+    async function startDetectionLoop() {
       if (!videoElement || !detectorRef.current) return;
+      isDetectingRef.current = true;
 
-      try {
-        const hands = await detectorRef.current.estimateHands(videoElement);
-        
-        if (hands.length > 0 && hands[0].keypoints) {
-          const gesture = detectGestures(
-            hands[0].keypoints,
-            videoElement.videoWidth,
-            videoElement.videoHeight
-          );
-          setGestureInfo(gesture);
-          setLandmarks(hands[0].keypoints);
-        } else {
-          setGestureInfo(null);
-          setLandmarks(null);
+      async function detectHands() {
+        if (!videoElement || !detectorRef.current) return;
+
+        try {
+          const hands = await detectorRef.current.estimateHands(videoElement, {
+            flipHorizontal: true,
+          });
+
+          if (hands.length > 0 && hands[0].keypoints) {
+            const gesture = detectGestures(
+              hands[0].keypoints,
+              videoElement.videoWidth,
+              videoElement.videoHeight
+            );
+            setGestureInfo(gesture);
+            setLandmarks(hands[0].keypoints);
+          } else {
+            setGestureInfo(null);
+            setLandmarks(null);
+          }
+        } catch (error) {
+          console.error('Hand detection error:', error);
         }
-      } catch (error) {
-        console.error('Hand detection error:', error);
+
+        animationRef.current = requestAnimationFrame(detectHands);
       }
 
-      animationRef.current = requestAnimationFrame(detectHands);
+      detectHands();
     }
 
-    detectHands();
+    waitForVideoAndDetect();
 
     return () => {
+      isDetectingRef.current = false;
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
