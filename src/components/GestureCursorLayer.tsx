@@ -311,20 +311,21 @@ function isClickable(el: Element): boolean {
   const role = el.getAttribute('role');
   if (role === 'button') return true;
   const cls = (el as HTMLElement).classList;
-  return cls.contains('menu-item')     ||
-         cls.contains('mode-btn')      ||
+  return cls.contains('menu-item')        ||
+         cls.contains('mode-btn')         ||
          cls.contains('clear-canvas-btn') ||
-         cls.contains('exit-draw-btn') ||
-         cls.contains('keyboard-key')  ||
-         cls.contains('keyboard-toggle') ||
-         cls.contains('download-link');
+         cls.contains('exit-draw-btn')    ||
+         cls.contains('keyboard-key')     ||
+         cls.contains('keyboard-toggle')  ||
+         cls.contains('download-link')    ||
+         cls.contains('draw-tool-btn');
 }
 
 function findNearestClickable(
   cx: number, cy: number, radius: number
 ): { el: HTMLElement; cx: number; cy: number } | null {
   const buttons = document.querySelectorAll<HTMLElement>(
-    'button, [role="button"], .menu-item, .mode-btn, .keyboard-key, .keyboard-toggle'
+    'button, [role="button"], .menu-item, .mode-btn, .keyboard-key, .keyboard-toggle, .draw-tool-btn'
   );
   let best: { el: HTMLElement; cx: number; cy: number } | null = null;
   let bestDist = radius;

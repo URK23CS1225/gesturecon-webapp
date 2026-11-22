@@ -196,3 +196,138 @@ body {
   box-shadow: 0 0 10px rgba(0, 200, 255, 0.4) !important;
   transition: outline 0.05s, box-shadow 0.05s;
 }
+
+/* ── Drawing Toolbar ────────────────────────────────────────────────────── */
+.drawing-toolbar {
+  position:        fixed;
+  top:             50%;
+  right:           28px;
+  transform:       translateY(-50%);
+  display:         flex;
+  flex-direction:  column;
+  align-items:     stretch;
+  gap:             10px;
+  background:      rgba(10, 10, 20, 0.82);
+  backdrop-filter: blur(18px);
+  border:          1px solid rgba(255, 255, 255, 0.12);
+  border-radius:   20px;
+  padding:         16px 14px;
+  z-index:         500;
+  min-width:       120px;
+  box-shadow:      0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.draw-toolbar-label {
+  font-size:     10px;
+  font-weight:   700;
+  color:         rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding:       0 2px;
+}
+
+.draw-toolbar-divider {
+  height:     1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin:     2px 0;
+}
+
+/* Colour grid — 2 × 4 */
+.draw-color-grid {
+  display:               grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap:                   8px;
+}
+
+.draw-color-swatch {
+  width:         26px;
+  height:        26px;
+  border-radius: 50%;
+  border:        2px solid rgba(255, 255, 255, 0.15);
+  cursor:        pointer;
+  background:    var(--swatch-color);
+  transition:    transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  padding:       0;
+  outline:       none;
+}
+
+.draw-color-swatch:hover {
+  transform:    scale(1.15);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.draw-color-swatch.selected {
+  border-color: white;
+  box-shadow:   0 0 0 3px rgba(255, 255, 255, 0.35),
+                0 0 10px var(--swatch-color);
+  transform:    scale(1.15);
+}
+
+/* Brush size row */
+.draw-size-row {
+  display:         flex;
+  justify-content: space-between;
+  gap:             6px;
+}
+
+.draw-size-btn {
+  flex:            1;
+  height:          44px;
+  border-radius:   10px;
+  background:      rgba(255, 255, 255, 0.07);
+  border:          1px solid rgba(255, 255, 255, 0.12);
+  cursor:          pointer;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  transition:      background 0.15s, border-color 0.15s, transform 0.1s;
+  padding:         0;
+  outline:         none;
+}
+
+.draw-size-btn:hover {
+  background:   rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.draw-size-btn.selected {
+  background:   rgba(102, 126, 234, 0.35);
+  border-color: #667eea;
+  box-shadow:   0 0 8px rgba(102, 126, 234, 0.4);
+}
+
+.draw-size-preview {
+  display:       block;
+  border-radius: 50%;
+  transition:    background 0.15s;
+  min-width:     2px;
+  min-height:    2px;
+}
+
+/* Action buttons */
+.draw-action-btn {
+  width:         100%;
+  padding:       10px 0;
+  border-radius: 11px;
+  border:        none;
+  cursor:        pointer;
+  font-size:     13px;
+  font-weight:   600;
+  color:         white;
+  transition:    opacity 0.2s, transform 0.1s;
+  outline:       none;
+  letter-spacing: 0.02em;
+}
+
+.draw-action-btn:hover  { opacity: 0.85; transform: scale(1.02); }
+.draw-action-btn:active { transform: scale(0.96); }
+
+.draw-action-clear {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  box-shadow: 0 4px 12px rgba(245, 87, 108, 0.35);
+}
+
+.draw-action-exit {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+}

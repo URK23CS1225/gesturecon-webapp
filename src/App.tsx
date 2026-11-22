@@ -1,7 +1,8 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { VideoFeed } from './components/VideoFeed';
 import { GestureCursorLayer } from './components/GestureCursorLayer';
-import { DrawingCanvas } from './components/DrawingCanvas';
+import { DrawingCanvas, DrawingCanvasHandle } from './components/DrawingCanvas';
+import { DrawingToolbar } from './components/DrawingToolbar';
 import { NoteBoard } from './components/NoteBoard';
 import { HandSkeleton } from './components/HandSkeleton';
 import { DebugOverlay } from './components/DebugOverlay';
@@ -14,7 +15,10 @@ function App() {
   const [videoDimensions, setVideoDimensions] = useState({ width: 0, height: 0 });
   const [isDrawMode, setIsDrawMode] = useState(false);
   const [drawPosition, setDrawPosition] = useState<{ x: number; y: number; isDrawing: boolean } | null>(null);
+  const [strokeColor, setStrokeColor] = useState('#1a1a2e');
+  const [strokeWidth, setStrokeWidth] = useState(5);
   const [showDebug, setShowDebug] = useState(false);
+  const drawingCanvasRef = useRef<DrawingCanvasHandle>(null);
 
   const { gestureInfo, landmarks, isReady, metrics, debugData } = useHandTracking(videoElement);
 
@@ -154,12 +158,28 @@ function App() {
       />
 
       <DrawingCanvas
+        ref={drawingCanvasRef}
         drawPosition={drawPosition}
         isDrawMode={isDrawMode}
         handLost={metrics.handLost}
-        onClear={() => setDrawPosition(null)}
-        onExitDrawMode={() => setIsDrawMode(false)}
+        strokeColor={strokeColor}
+        strokeWidth={strokeWidth}
       />
+
+      {/* Drawing palette — visible only while in draw mode */}
+      {isDrawMode && (
+        <DrawingToolbar
+          strokeColor={strokeColor}
+          strokeWidth={strokeWidth}
+          onColorChange={setStrokeColor}
+          onWidthChange={setStrokeWidth}
+          onClear={() => {
+            drawingCanvasRef.current?.clear();
+            setDrawPosition(null);
+          }}
+          onExit={() => setIsDrawMode(false)}
+        />
+      )}
 
       <NoteBoard />
 
